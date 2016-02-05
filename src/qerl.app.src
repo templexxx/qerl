@@ -1,10 +1,12 @@
-{application, 'qerl',
- [{description, "An OTP library"},
+{application, qerl,
+ [{description, "Qiniu library for Erlang"},
   {vsn, "0.1.0"},
   {registered, []},
   {applications,
    [kernel,
-    stdlib
+    stdlib,
+    inets,
+    jsx
    ]},
   {env,[]},
   {modules, []},
