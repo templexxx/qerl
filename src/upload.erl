@@ -12,7 +12,7 @@
 -include("config.hrl").
 -include_lib("kernel/include/file.hrl").
 
--import(auth, [upload_token/1, upload_token/2, upload_token/3]).
+-import(qnauth, [upload_token/1, upload_token/2, upload_token/3]).
 -import(http, [h_post/4]).
 -import(utils, [urlsafe_base64_encode/1]).
 

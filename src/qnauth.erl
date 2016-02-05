@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 08. Nov 2015 9:47 AM
 %%%-------------------------------------------------------------------
--module(auth).
+-module(qnauth).
 -author("templex").
 
 -include("config.hrl").

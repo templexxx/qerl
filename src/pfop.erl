@@ -11,7 +11,7 @@
 
 -include("config.hrl").
 -import(http, [h_post/4]).
--import(auth, [requests_auth/3]).
+-import(qnauth, [requests_auth/3]).
 
 %% API
 -export([pfop/3, pfop/4, pfop/5, pfop/6]).

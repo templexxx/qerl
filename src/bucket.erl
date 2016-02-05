@@ -15,7 +15,7 @@
 
 -import(http, [h_post/4, h_get/2]).
 -import(utils, [entry/1, entry/2]).
--import(auth, [requests_auth/3]).
+-import(qnauth, [requests_auth/3]).
 
 %% API
 -export([list/1, list/2, list/3, list/4, list/5]).

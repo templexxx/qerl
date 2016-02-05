@@ -10,7 +10,7 @@
 -author("templex").
 
 -include("config.hrl").
--import(auth, [requests_auth/1, requests_auth/3]).
+-import(qnauth, [requests_auth/1, requests_auth/3]).
 
 %% API
 -export([h_post/4]).
