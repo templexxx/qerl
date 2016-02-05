@@ -16,7 +16,7 @@
 
 -export([urlsafe_base64_encode/1, urlsafe_base64_decode/1]).
 -export([entry/1, entry/2]).
--export([etag_file/1]).
+-export([qetag/1]).
 
 
 urlsafe_base64_encode(Data) ->
@@ -34,7 +34,7 @@ entry(Bucket, Key) ->
     urlsafe_base64_encode(Scope).
 
 
-etag_file(FileName) ->
+qetag(FileName) ->
     {ok, FInfo} = file:read_file_info(FileName),
     Fsize = FInfo#file_info.size,
     if
