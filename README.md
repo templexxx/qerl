@@ -26,7 +26,7 @@ USAGE
 -----
 	add it as a dependency in your application
 	add your ak sk in the ./include/config.hrl
-	qerl:start().
+	add qerl in you app.src
 	
 
 	
