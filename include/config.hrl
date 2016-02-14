@@ -22,9 +22,9 @@
 %% account
 %% NO.1 ak%sk
 %% access_key
--define(AK1, "VPVwmTioeHZ8RgurXznTrajwYeb031cKpVr2wlKX").
+-define(AK1, "your ak").
 %% secret key
--define(SK1, "QUQnEVeKqlKER9_I3pJQv6XiOm0R4St9ye8S5dOH").
+-define(SK1, "your sk").
 %% NO.2 ak%sk
 %% access_key
 -define(AK2, "MY_ACCESS_KEY").
