@@ -2,8 +2,8 @@ REBAR := ./rebar3
 
 all:get-deps compile
 
-get-deps:
-		@$(REBAR) deps
+deps:
+		@$(REBAR) upgrade
 
 compile:
 		@$(REBAR) compile
