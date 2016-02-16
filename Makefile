@@ -12,4 +12,4 @@ clean:
 		@$(REBAR) clean
 
 run:
-		erl -pa deps/*/ebin -pa ./ebin
+		erl -pa _build/default/lib/*/ebin
