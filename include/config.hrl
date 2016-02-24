@@ -50,3 +50,5 @@
 %% others
 %% 4MB
 -define(BLOCK_SIZE, 4194304).
+%% MAX CONNECTIONS
+-define(MAX_CONNECTIONS, 100000).
