@@ -10,7 +10,7 @@
 -author("templex").
 
 -include("config.hrl").
--import(http, [h_post/4]).
+-import(http, [h_post/3]).
 -import(qnauth, [requests_auth/3]).
 
 %% API
@@ -27,8 +27,8 @@ pfop(Bucket, Key, Fops, NotifyURL, Force, Pipeline) ->
     Request_body = pfop_request_body(Bucket, Key, Fops, NotifyURL, Force, Pipeline),
     URL = ?API_HOST ++ "/pfop/",
     AUTH = requests_auth(URL, Request_body, ?DEF_CONTENT_TYPE),
-    Headers = [{"Authorization", AUTH}],
-    h_post(URL, Request_body, Headers, ?DEF_CONTENT_TYPE).
+    Headers = [{<<"Authorization">>, list_to_binary(AUTH)}, {<<"Content-Type">>, ?DEF_CONTENT_TYPE}],
+    h_post(URL, list_to_binary(Request_body), Headers).
 
 
 %%%%%↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑%%%%%

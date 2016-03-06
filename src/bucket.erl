@@ -13,7 +13,7 @@
 
 -import(utils, [urlsafe_base64_encode/1]).
 
--import(http, [h_post/4, h_get/2]).
+-import(http, [h_post/3, h_get/2]).
 -import(utils, [entry/1, entry/2]).
 -import(qnauth, [requests_auth/3]).
 
@@ -44,15 +44,15 @@ list(Bucket, Marker, Limit, Prefix) ->
 list(Bucket, Marker, Limit, Prefix, Delimiter) ->
     URL = list_url(Bucket, Marker, Limit, Prefix, Delimiter),
     AUTH = requests_auth(URL, [], ?DEF_CONTENT_TYPE),
-    Headers = [{"Authorization", AUTH}],
-    h_post(URL, [], Headers, ?DEF_CONTENT_TYPE).
+    Headers = [{<<"Authorization">>, list_to_binary(AUTH)}, {<<"Content-Type">>, ?DEF_CONTENT_TYPE}],
+    h_post(URL, <<>>, Headers).
 
 
 stat(Bucket, Key) ->
     EncodedEntryURI = entry(Bucket, Key),
     URL = ?RS_HOST ++ "/stat/" ++ EncodedEntryURI,
     AUTH = requests_auth(URL, [], ?DEF_CONTENT_TYPE),
-    Headers = [{"Authorization", AUTH}],
+    Headers = [{<<"Authorization">>, list_to_binary(AUTH)}],
     h_get(URL, Headers).
 
 
@@ -61,8 +61,8 @@ move(Src_bukcet, Src_key, Dest_bucket, Dest_key) ->
     EncodedEntryURIDest = entry(Dest_bucket, Dest_key),
     URL = ?RS_HOST ++ "/move/" ++ EncodedEntryURISrc ++ "/" ++ EncodedEntryURIDest,
     AUTH = requests_auth(URL, [], ?DEF_CONTENT_TYPE),
-    Headers = [{"Authorization", AUTH}],
-    h_post(URL, [], Headers, ?DEF_CONTENT_TYPE).
+    Headers = [{<<"Authorization">>, list_to_binary(AUTH)}, {<<"Content-Type">>, ?DEF_CONTENT_TYPE}],
+    h_post(URL, <<>>, Headers).
 
 
 copy(Src_bukcet, Src_key, Dest_bucket, Dest_key) ->
@@ -70,16 +70,16 @@ copy(Src_bukcet, Src_key, Dest_bucket, Dest_key) ->
     EncodedEntryURIDest = entry(Dest_bucket, Dest_key),
     URL = ?RS_HOST ++ "/copy/" ++ EncodedEntryURISrc ++ "/" ++ EncodedEntryURIDest,
     AUTH = requests_auth(URL, [], ?DEF_CONTENT_TYPE),
-    Headers = [{"Authorization", AUTH}],
-    h_post(URL, [], Headers, ?DEF_CONTENT_TYPE).
+    Headers = [{<<"Authorization">>, list_to_binary(AUTH)}, {<<"Content-Type">>, ?DEF_CONTENT_TYPE}],
+    h_post(URL, <<>>, Headers).
 
 
 delete(Bucket, Key) ->
     EncodedEntryURI = entry(Bucket, Key),
     URL = ?RS_HOST ++ "/delete/" ++ EncodedEntryURI,
     AUTH = requests_auth(URL, [], ?DEF_CONTENT_TYPE),
-    Headers = [{"Authorization", AUTH}],
-    h_post(URL, [], Headers, ?DEF_CONTENT_TYPE).
+    Headers = [{<<"Authorization">>, list_to_binary(AUTH)}, {<<"Content-Type">>, ?DEF_CONTENT_TYPE}],
+    h_post(URL, <<>>, Headers).
 
 
 fetch(Src_URL, Bucket, Key) ->
@@ -87,22 +87,22 @@ fetch(Src_URL, Bucket, Key) ->
     EncodedSrcURL = urlsafe_base64_encode(Src_URL),
     URL = ?IO_HOST ++ "/fetch/" ++ EncodedSrcURL ++ "/to/" ++ EncodedEntryURI,
     AUTH = requests_auth(URL, [], ?DEF_CONTENT_TYPE),
-    Headers = [{"Authorization", AUTH}],
-    h_post(URL, [], Headers, ?DEF_CONTENT_TYPE).
+    Headers = [{<<"Authorization">>, list_to_binary(AUTH)}, {<<"Content-Type">>, ?DEF_CONTENT_TYPE}],
+    h_post(URL, <<>>, Headers).
 
 
 chgm(Bucket, Key, MimeType) ->
     URL = ?RS_HOST ++ "/chgm/" ++ entry(Bucket, Key) ++ "/mime/" ++ entry(MimeType),
     AUTH = requests_auth(URL, [], ?DEF_CONTENT_TYPE),
-    Headers = [{"Authorization", AUTH}],
-    h_post(URL, [], Headers, ?DEF_CONTENT_TYPE).
+    Headers = [{<<"Authorization">>, list_to_binary(AUTH)}, {<<"Content-Type">>, ?DEF_CONTENT_TYPE}],
+    h_post(URL, <<>>, Headers).
 
 
 prefetch(Bucket, Key) ->
     URL = ?IO_HOST ++ "/prefetch/" ++ entry(Bucket, Key),
     AUTH = requests_auth(URL, [], ?DEF_CONTENT_TYPE),
-    Headers = [{"Authorization", AUTH}],
-    h_post(URL, [], Headers, ?DEF_CONTENT_TYPE).
+    Headers = [{<<"Authorization">>, list_to_binary(AUTH)}, {<<"Content-Type">>, ?DEF_CONTENT_TYPE}],
+    h_post(URL, <<>>, Headers).
 
 
 batch_stat(Key_list) ->
@@ -124,8 +124,8 @@ batch_copy(Key_list) ->
 batch(Ops) ->
     URL = ?RS_HOST ++ "/batch",
     AUTH = requests_auth(URL, Ops, ?DEF_CONTENT_TYPE),
-    Headers = [{"Authorization", AUTH}],
-    h_post(URL, Ops, Headers, ?DEF_CONTENT_TYPE).
+    Headers = [{<<"Authorization">>, list_to_binary(AUTH)}, {<<"Content-Type">>, ?DEF_CONTENT_TYPE}],
+    h_post(URL, list_to_binary(Ops), Headers).
 
 
 %%%%%↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑%%%%%

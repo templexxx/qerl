@@ -15,16 +15,18 @@
 -define(RSF_HOST, "http://rsf.qbox.me").
 -define(IO_HOST, "http://iovip.qbox.me").
 -define(UP_HOST, "http://up.qiniu.com").
--define(DEF_CONNECT_TIMEOUT, 30).
 -define(DEF_RETRY_TIME, 3).
+-define(DEF_CONTENT_TYPE, <<"application/x-www-form-urlencoded">>).
+-define(DEF_OPTIONS, [{connect_timeout, 3000}, {max_connections, 10000}]).
+-define(DEF_POOLNAME, 'qiniupool').
 
 
 %% account
 %% NO.1 ak%sk
 %% access_key
--define(AK1, "your ak").
+-define(AK1, "VPVwmTioeHZ8RgurXznTrajwYeb031cKpVr2wlKX").
 %% secret key
--define(SK1, "your sk").
+-define(SK1, "QUQnEVeKqlKER9_I3pJQv6XiOm0R4St9ye8S5dOH").
 %% NO.2 ak%sk
 %% access_key
 -define(AK2, "MY_ACCESS_KEY").
@@ -44,11 +46,10 @@
 -define(EXAMPLE_PUTPOLICY, [{<<"callbackUrl">>, <<"http://1.1.1.1">>},{<<"insertOnly">>,1}]).
 -define(DEF_PUTPOLICY, []).
 -define(DEF_KEY, []).
--define(DEF_CONTENT_TYPE, "application/x-www-form-urlencoded").
+
 
 
 %% others
 %% 4MB
 -define(BLOCK_SIZE, 4194304).
-%% MAX CONNECTIONS
--define(MAX_CONNECTIONS, 100000).
+
