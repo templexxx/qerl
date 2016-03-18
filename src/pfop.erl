@@ -10,8 +10,8 @@
 -author("templex").
 
 -include("config.hrl").
--import(http, [h_post/3]).
--import(qnauth, [requests_auth/3]).
+-import(qnhttp, [req/4]).
+-import(qnauth, [auth_request/3]).
 
 %% API
 -export([pfop/3, pfop/4, pfop/5, pfop/6]).
@@ -24,11 +24,11 @@ pfop(Bucket, Key, Fops, NotifyURL) ->
 pfop(Bucket, Key, Fops, NotifyURL, Force) ->
     pfop(Bucket, Key, Fops, NotifyURL, Force, []).
 pfop(Bucket, Key, Fops, NotifyURL, Force, Pipeline) ->
-    Request_body = pfop_request_body(Bucket, Key, Fops, NotifyURL, Force, Pipeline),
+    ReqBody = pfop_request_body(Bucket, Key, Fops, NotifyURL, Force, Pipeline),
     URL = ?API_HOST ++ "/pfop/",
-    AUTH = requests_auth(URL, Request_body, ?DEF_CONTENT_TYPE),
-    Headers = [{<<"Authorization">>, list_to_binary(AUTH)}, {<<"Content-Type">>, ?DEF_CONTENT_TYPE}],
-    h_post(URL, list_to_binary(Request_body), Headers).
+    AUTH = auth_request(URL, ReqBody, ?DEF_CONTENT_TYPE),
+    ReqHeaders = [{"Authorization", AUTH}],
+    req(post, URL, ReqHeaders, list_to_binary(ReqBody)).
 
 
 %%%%%↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑%%%%%
@@ -42,7 +42,7 @@ pfop(Bucket, Key, Fops, NotifyURL, Force, Pipeline) ->
 pfop_request_body(Bucket, Key, Fops, NotifyURL, Force, Pipeline) ->
     Pipeline1 = pipeline(Pipeline),
     Force1 = force(Force),
-    NotifyURL1 = notifyurl(NotifyURL),
+    NotifyURL1 = notify_url(NotifyURL),
     "bucket=" ++ http_uri:encode(Bucket) ++ "&key=" ++ http_uri:encode(Key) ++ "&fops=" ++ http_uri:encode(Fops) ++ NotifyURL1 ++ Force1 ++ Pipeline1.
 
 
@@ -60,7 +60,7 @@ force(Force) ->
     end.
 
 
-notifyurl(NotifyURL) ->
+notify_url(NotifyURL) ->
     if
         NotifyURL == [] -> [];
         true -> "&notifyURL=" ++ http_uri:encode(NotifyURL)

@@ -6,12 +6,10 @@
    [kernel,
     stdlib,
     inets,
-    hackney,
     jsx
    ]},
   {env,[]},
   {modules, []},
-
   {contributors, []},
   {licenses, []},
   {links, []}

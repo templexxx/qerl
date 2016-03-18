@@ -15,31 +15,31 @@
 
 %% API
 
--export([upload_token/1, upload_token/2, upload_token/3]).
--export([private_download_url/1, private_download_url/2]).
+-export([up_token/1, up_token/2, up_token/3]).
+-export([private_url/1, private_url/2]).
 -export([verify_callback/3, verify_callback/4]).
--export([urlparse/1]).
--export([requests_auth/1, requests_auth/3]).
+-export([parse_url/1]).
+-export([auth_request/1, auth_request/3]).
 
 
-upload_token(Bucket) ->
-    upload_token(Bucket, ?DEF_KEY, ?DEF_PUTPOLICY).
-upload_token(Bucket, Key) ->
-    upload_token(Bucket, Key, ?DEF_PUTPOLICY).
-upload_token(Bucket, Key, PutPolicy) ->
-    Right_PutPolicy = maps:without(?PUTPOLICY, maps:from_list(PutPolicy)),
+up_token(Bucket) ->
+    up_token(Bucket, ?DEF_KEY, ?DEF_PUTPOLICY).
+up_token(Bucket, Key) ->
+    up_token(Bucket, Key, ?DEF_PUTPOLICY).
+up_token(Bucket, Key, PutPolicy) ->
+    IS_putpolicy = maps:without(?PUTPOLICY, maps:from_list(PutPolicy)),
     if
-        Right_PutPolicy =:= #{} ->
-            URLbase64_PutPolicy = urlsafe_base64_encode(putpolicy(Bucket, Key, PutPolicy)),
-            sign(URLbase64_PutPolicy, 1) ++ ":" ++ URLbase64_PutPolicy;
-        Right_PutPolicy =/= #{} ->
+        IS_putpolicy =:= #{} ->
+            Safe_policy = urlsafe_base64_encode(putpolicy(Bucket, Key, PutPolicy)),
+            sign(Safe_policy, 1) ++ ":" ++ Safe_policy;
+        IS_putpolicy =/= #{} ->
             io:format("Please give me the FUCKING correct putpolicy ")
     end.
 
 
-private_download_url(URL) ->
-    private_download_url(URL, ?DOWN_EXPIRES).
-private_download_url(URL, Down_Expires) ->
+private_url(URL) ->
+    private_url(URL, ?DOWN_EXPIRES).
+private_url(URL, Down_Expires) ->
     DownloadURL = URL ++ "?e=" ++ integer_to_list(expires_time(Down_Expires)),
     DownloadURL ++ "&token=" ++ sign(DownloadURL, 1).
 
@@ -58,9 +58,9 @@ verify_callback(Origin_authorization, URL, Body, Content_type) ->
     end.
 
 
-requests_auth(URL) ->
-    requests_auth(URL, [], ?DEF_CONTENT_TYPE).
-requests_auth(URL, Body, Content_type) ->
+auth_request(URL) ->
+    auth_request(URL, [], ?DEF_CONTENT_TYPE).
+auth_request(URL, Body, Content_type) ->
     "QBox " ++ token_of_request(URL, Body, Content_type, 1).
 
 
@@ -68,7 +68,7 @@ requests_auth(URL, Body, Content_type) ->
 %%%%%↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑ YOU NEED CARE ABOUT ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑%%%%%
 %%%%%                                                                                                    %%%%%
 %%%%%                                                                                                    %%%%%
-%%%%%↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ Internal Fuctions ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓%%%%%
+%%%%%↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ Internal Functions ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓%%%%%
 %%%%%↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓%%%%%
 
 
@@ -82,7 +82,6 @@ putpolicy(Bucket, Key, PutPolicy) ->
     Scope_string = string:strip(Bucket ++ ":" ++ Key, right, $:),
     Scope = [{<<"scope">>,
             binary:list_to_bin(Scope_string)}],
-
     binary:bin_to_list(jsx:encode
                         (lists:append
                           (lists:append(PutPolicy, Deadline), Scope))).
@@ -97,13 +96,13 @@ sign(Data, Num_key) ->
     end.
 
 
-urlparse(URL) ->
+parse_url(URL) ->
     {ok, {_, _, _, _, P, Q}} = http_uri:parse(URL),
     {P, Q}.
 
 
 token_of_request(URL, Body, Content_type, Num_key) ->
-    {Path, Query} = urlparse(URL),
+    {Path, Query} = parse_url(URL),
     if
         Content_type =:= ?DEF_CONTENT_TYPE ->
             sign(Path ++ Query ++ "\n" ++ Body, Num_key);

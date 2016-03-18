@@ -13,9 +13,9 @@
 
 -import(utils, [urlsafe_base64_encode/1]).
 
--import(http, [h_post/3, h_get/2]).
+-import(qnhttp, [req/3, req/4]).
 -import(utils, [entry/1, entry/2]).
--import(qnauth, [requests_auth/3]).
+-import(qnauth, [auth_request/3]).
 
 %% API
 -export([list/1, list/2, list/3, list/4, list/5]).
@@ -43,66 +43,66 @@ list(Bucket, Marker, Limit, Prefix) ->
     list(Bucket, Marker, Limit, Prefix, []).
 list(Bucket, Marker, Limit, Prefix, Delimiter) ->
     URL = list_url(Bucket, Marker, Limit, Prefix, Delimiter),
-    AUTH = requests_auth(URL, [], ?DEF_CONTENT_TYPE),
-    Headers = [{<<"Authorization">>, list_to_binary(AUTH)}, {<<"Content-Type">>, ?DEF_CONTENT_TYPE}],
-    h_post(URL, <<>>, Headers).
+    AUTH = auth_request(URL, [], ?DEF_CONTENT_TYPE),
+    ReqReqHeaders = [{"Authorization", AUTH}],
+    req(post, URL, ReqReqHeaders).
 
 
 stat(Bucket, Key) ->
     EncodedEntryURI = entry(Bucket, Key),
     URL = ?RS_HOST ++ "/stat/" ++ EncodedEntryURI,
-    AUTH = requests_auth(URL, [], ?DEF_CONTENT_TYPE),
-    Headers = [{<<"Authorization">>, list_to_binary(AUTH)}],
-    h_get(URL, Headers).
+    AUTH = auth_request(URL, [], ?DEF_CONTENT_TYPE),
+    ReqHeaders = [{"Authorization", AUTH}],
+    req(get, URL, ReqHeaders).
 
 
 move(Src_bukcet, Src_key, Dest_bucket, Dest_key) ->
     EncodedEntryURISrc = entry(Src_bukcet, Src_key),
     EncodedEntryURIDest = entry(Dest_bucket, Dest_key),
     URL = ?RS_HOST ++ "/move/" ++ EncodedEntryURISrc ++ "/" ++ EncodedEntryURIDest,
-    AUTH = requests_auth(URL, [], ?DEF_CONTENT_TYPE),
-    Headers = [{<<"Authorization">>, list_to_binary(AUTH)}, {<<"Content-Type">>, ?DEF_CONTENT_TYPE}],
-    h_post(URL, <<>>, Headers).
+    AUTH = auth_request(URL, [], ?DEF_CONTENT_TYPE),
+    ReqHeaders = [{"authorization", AUTH}],
+    req(post, URL, ReqHeaders).
 
 
 copy(Src_bukcet, Src_key, Dest_bucket, Dest_key) ->
     EncodedEntryURISrc = entry(Src_bukcet, Src_key),
     EncodedEntryURIDest = entry(Dest_bucket, Dest_key),
     URL = ?RS_HOST ++ "/copy/" ++ EncodedEntryURISrc ++ "/" ++ EncodedEntryURIDest,
-    AUTH = requests_auth(URL, [], ?DEF_CONTENT_TYPE),
-    Headers = [{<<"Authorization">>, list_to_binary(AUTH)}, {<<"Content-Type">>, ?DEF_CONTENT_TYPE}],
-    h_post(URL, <<>>, Headers).
+    AUTH = auth_request(URL, [], ?DEF_CONTENT_TYPE),
+    ReqHeaders = [{"authorization", AUTH}],
+    req(post, URL, ReqHeaders).
 
 
 delete(Bucket, Key) ->
     EncodedEntryURI = entry(Bucket, Key),
     URL = ?RS_HOST ++ "/delete/" ++ EncodedEntryURI,
-    AUTH = requests_auth(URL, [], ?DEF_CONTENT_TYPE),
-    Headers = [{<<"Authorization">>, list_to_binary(AUTH)}, {<<"Content-Type">>, ?DEF_CONTENT_TYPE}],
-    h_post(URL, <<>>, Headers).
+    AUTH = auth_request(URL, [], ?DEF_CONTENT_TYPE),
+    ReqHeaders = [{"authorization", AUTH}],
+    req(post, URL, ReqHeaders).
 
 
 fetch(Src_URL, Bucket, Key) ->
     EncodedEntryURI = entry(Bucket, Key),
     EncodedSrcURL = urlsafe_base64_encode(Src_URL),
     URL = ?IO_HOST ++ "/fetch/" ++ EncodedSrcURL ++ "/to/" ++ EncodedEntryURI,
-    AUTH = requests_auth(URL, [], ?DEF_CONTENT_TYPE),
-    Headers = [{<<"Authorization">>, list_to_binary(AUTH)}, {<<"Content-Type">>, ?DEF_CONTENT_TYPE}],
-    h_post(URL, <<>>, Headers).
+    AUTH = auth_request(URL, [], ?DEF_CONTENT_TYPE),
+    ReqHeaders = [{"authorization", AUTH}],
+    req(post, URL, ReqHeaders).
 
 
 chgm(Bucket, Key, MimeType) ->
     URL = ?RS_HOST ++ "/chgm/" ++ entry(Bucket, Key) ++ "/mime/" ++ entry(MimeType),
-    AUTH = requests_auth(URL, [], ?DEF_CONTENT_TYPE),
-    Headers = [{<<"Authorization">>, list_to_binary(AUTH)}, {<<"Content-Type">>, ?DEF_CONTENT_TYPE}],
-    h_post(URL, <<>>, Headers).
+    AUTH = auth_request(URL, [], ?DEF_CONTENT_TYPE),
+    ReqHeaders = [{"authorization", AUTH}],
+    req(post, URL, ReqHeaders).
 
 
 prefetch(Bucket, Key) ->
     URL = ?IO_HOST ++ "/prefetch/" ++ entry(Bucket, Key),
-    AUTH = requests_auth(URL, [], ?DEF_CONTENT_TYPE),
-    Headers = [{<<"Authorization">>, list_to_binary(AUTH)}, {<<"Content-Type">>, ?DEF_CONTENT_TYPE}],
-    h_post(URL, <<>>, Headers).
+    AUTH = auth_request(URL, [], ?DEF_CONTENT_TYPE),
+    ReqHeaders = [{"authorization", AUTH}],
+    req(post, URL, ReqHeaders).
 
 
 batch_stat(Key_list) ->
@@ -123,9 +123,9 @@ batch_copy(Key_list) ->
 
 batch(Ops) ->
     URL = ?RS_HOST ++ "/batch",
-    AUTH = requests_auth(URL, Ops, ?DEF_CONTENT_TYPE),
-    Headers = [{<<"Authorization">>, list_to_binary(AUTH)}, {<<"Content-Type">>, ?DEF_CONTENT_TYPE}],
-    h_post(URL, list_to_binary(Ops), Headers).
+    AUTH = auth_request(URL, Ops, ?DEF_CONTENT_TYPE),
+    ReqHeaders = [{"authorization", AUTH}],
+    req(post, URL, ReqHeaders, list_to_binary(Ops)).
 
 
 %%%%%↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑%%%%%
