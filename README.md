@@ -10,10 +10,11 @@ Qerl is a Qiniu lib for Erlang
 Qerl will:
 
 > 1. manage file/bucket
-> 2. auth the request of upload or the callback from Qiniu
+> 2. auth the request of upload and the callback from Qiniu
 > 3. calculate qetag in parallel
-> 4. retry automatically (for some http status codes)
-> 5. ...
+> 4. upload blocks in parallel
+> 5. retry automatically (for some http status codes)
+> 6. ...
 
 
 Build
