@@ -87,7 +87,7 @@ bput(File, Key, UpToken, FSize) ->
 
 up_bin_main(Data, Key, Token) ->
 	Data_list = binary_to_list(Data),
-	Boundary = "------------thatiscoolboundaryisnotit",
+	Boundary = "------------thisisacoolboundarysuperb",
 	ReqBody = format_multipart_body(Boundary, Token, Key, Data_list),
 	ContentType = lists:concat(["multipart/form-data; boundary=", Boundary]),
 	ReqHeaders = [{"content-length", length(ReqBody)}],
