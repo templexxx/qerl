@@ -15,7 +15,6 @@
 %% API
 -export([req/3, req/4, req/5]).
 
-
 %% 分别代表两种http请求方式post和get
 
 %% 它们的返回为{StatusCode, Headers, Response}
