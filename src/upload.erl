@@ -32,7 +32,7 @@ up(FilePath, Bucket, Key, PutPolicy) ->
 		{ok, File} ->
 			{ok, FSize} = file:position(File, eof),
 			try
-				up_main(File, Bucket, Key, PutPolicy, FSize)
+				up_main(FilePath, File, Bucket, Key, PutPolicy, FSize)
 			after
 				file:close(File)
 			end
@@ -48,13 +48,13 @@ up(FilePath, Bucket, Key, PutPolicy) ->
 %%%%%↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓%%%%%
 
 
-up_main(File, Bucket, Key, PutPolicy, FSize) ->
+up_main(FilePath, File, Bucket, Key, PutPolicy, FSize) ->
 	Token = up_token(Bucket, Key, PutPolicy),
 	if
 		FSize < ?TRIGGER * ?BLOCK_SIZE ->
 			up_bin(File, Key, Token, FSize);
 		true ->
-			bput(File, Key, Token, FSize)
+			bput(FilePath, File, Key, Token, FSize, Bucket)
 	end.
 
 
@@ -66,7 +66,7 @@ up_bin(File, Key, Token, FSize) ->
 	end.
 
 
-bput(File, Key, UpToken, FSize) ->
+bput(FilePath, File, Key, UpToken, FSize, Bucket) ->
 	PoolSize = poolsize(),
 	BlockNum = (FSize div ?BLOCK_SIZE)
 		+ (case FSize rem ?BLOCK_SIZE of
@@ -75,10 +75,70 @@ bput(File, Key, UpToken, FSize) ->
 			   _ ->
 				   1
 		   end),
-	ctx_workers(File, FSize, PoolSize, UpToken),
-	CtxAllRaw = update_ctx([], BlockNum, 0),
-	CtxAll = string:strip(CtxAllRaw, left, $,),
-	mkfile(Key, FSize, UpToken, CtxAll).
+	dets:open_file(bput, {file, "bput"}),
+	Qetag = utils:qetag(FilePath),
+	CtxInfo = dets:lookup(bput, {Bucket, Qetag}),
+	BlockTotal = lists:seq(0, BlockNum - 1),
+	case CtxInfo of
+		[] ->
+			ctx_workers(File, FSize, PoolSize, UpToken, BlockTotal, Qetag, 0, BlockNum),
+			CtxTuple = update_ctx([], BlockNum, 0, Bucket),
+			CtxAllRaw = get_ctx(CtxTuple),
+			CtxAll = string:strip(CtxAllRaw, left, $,),
+			dets:close(bput),
+			mkfile(Key, FSize, UpToken, CtxAll);
+		[{_, CtxAlready}] ->
+			BlockDoneList = block_done_list(CtxAlready, []),
+			BlockLeftList = BlockTotal -- BlockDoneList,
+			BlockDone = length(CtxAlready),
+			case BlockDone == BlockNum of
+				true ->
+					KeyInQiniu =
+						case Key == [] of
+							true ->
+								Qetag;
+							false ->
+								Key
+						end,
+					{StatusCodes, _, _} = bucket:stat(Bucket, KeyInQiniu),
+					case StatusCodes of
+						200 ->
+							{"already exists", Qetag};
+						_ ->
+							ctx_workers(File, FSize, PoolSize, UpToken, BlockTotal, Qetag, BlockDone, BlockNum),
+							CtxTuple = update_ctx([], BlockNum, 0, Bucket),
+							CtxAllRaw = get_ctx(CtxTuple),
+							CtxAll = string:strip(CtxAllRaw, left, $,),
+							dets:close(bput),
+							mkfile(Key, FSize, UpToken, CtxAll)
+					end;
+				false ->
+					ctx_workers(File, FSize, PoolSize, UpToken, BlockLeftList, Qetag, BlockDone, BlockNum),
+					CtxTuple = update_ctx(CtxAlready, BlockNum, BlockDone, Bucket),
+					CtxAllRaw = get_ctx(CtxTuple),
+					CtxAll = string:strip(CtxAllRaw, left, $,),
+					dets:close(bput),
+					mkfile(Key, FSize, UpToken, CtxAll)
+			end
+	end.
+
+get_ctx(CtxList) ->
+	SortCtx = lists:sort(CtxList),
+	get_ctx_main(SortCtx, []).
+
+get_ctx_main([], CtxAll) ->
+	CtxAll;
+get_ctx_main([H|T], CtxAll) ->
+	{_, Ctx} = H,
+	CtxUpdate = CtxAll ++ "," ++ Ctx,
+	get_ctx_main(T, CtxUpdate).
+
+block_done_list([], BlockDoneList) ->
+	BlockDoneList;
+block_done_list([H|T], BlockDoneList) ->
+	{No_block, _} = H,
+	BdlUpdate = BlockDoneList ++ [No_block - 1],
+	block_done_list(T, BdlUpdate).
 
 
 %%%%%↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ Internal Functions ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓%%%%%
@@ -87,7 +147,7 @@ bput(File, Key, UpToken, FSize) ->
 
 up_bin_main(Data, Key, Token) ->
 	Data_list = binary_to_list(Data),
-	Boundary = "------------thisisacoolboundarysuperb",
+	Boundary = "------------thatiscoolboundaryisnotit",
 	ReqBody = format_multipart_body(Boundary, Token, Key, Data_list),
 	ContentType = lists:concat(["multipart/form-data; boundary=", Boundary]),
 	ReqHeaders = [{"content-length", length(ReqBody)}],
@@ -125,57 +185,67 @@ format_multipart_body_main(Boundary, Fields, Files) ->
 	string:join(Parts, "\r\n").
 
 
-start_worker(Parent, File, BlockDoneNum, Offset, Size, UpToken) ->
+start_worker(Parent, File, Offset, Size, UpToken, Qetag, WhichBlock) ->
 	{ok, BlockData} = file:pread(File, Offset, Size),
-	Parent ! {ctx, BlockDoneNum, ctx(BlockData, UpToken, Size)}.
+	Parent ! {ctx, ctx(BlockData, UpToken, Size), Qetag, WhichBlock}.
 
 
 
-update_ctx(Ctx, BlockNum, BlockDoneNum)
-	when BlockDoneNum < BlockNum ->
+update_ctx(CtxAlready, BlockNum, BlockDone, Bucket)
+	when BlockDone < BlockNum ->
 	receive
-		{ctx, BlockDoneNum, CtxBlock} ->
-			update_ctx(
-				Ctx ++ "," ++ CtxBlock,
-				BlockNum,
-				BlockDoneNum + 1
-				)
+		{ctx, CtxBlock, Qetag, WhickBlock} ->
+			case CtxBlock of
+				[] ->
+					update_ctx(CtxAlready, BlockNum, BlockDone + 1, Bucket);
+				_ ->
+					CtxUpdate = CtxAlready ++ [{WhickBlock, CtxBlock}],
+					dets:insert(bput, {{Bucket, Qetag}, CtxUpdate}),
+					update_ctx(CtxUpdate, BlockNum, BlockDone + 1, Bucket)
+			end
 	end;
-update_ctx(Ctx, BlockNum, BlockNum) ->
+update_ctx(Ctx, BlockNum, BlockNum, _Bucket) ->
 	Ctx.
 
 
-ctx_workers(File, FSize, PoolSize, UpToken) ->
+ctx_workers(File, FSize, PoolSize, UpToken, BlockLeftList, Qetag, BlockDone, BlockNum) ->
 	spawn_link(
 		?MODULE,
 		ctx_worker_pool,
-		[self(), File, FSize, PoolSize, UpToken]).
+		[self(), File, FSize, PoolSize, UpToken, BlockLeftList, Qetag, BlockDone, BlockNum]).
 
 
-ctx_worker_pool(Parent, File, FSize, PoolSize, UpToken) ->
+ctx_worker_pool(Parent, File, FSize, PoolSize, UpToken, BlockLeftList, Qetag, BlockDone, BlockNum) ->
 	process_flag(trap_exit, true),
 	worker_pool(
-		#{ parent => Parent,
+		#{parent => Parent,
 			file => File,
 			block_size => ?BLOCK_SIZE,
 			file_size => FSize,
 			worker_pool_size => PoolSize,
-			file_offset => 0,
-			next_block => 0,
+			file_offset => lists_first(BlockLeftList) * ?BLOCK_SIZE,
+			next_block => lists_first(BlockLeftList),
+			block_list => BlockLeftList -- [lists_first(BlockLeftList)],
 			workers => 0,
 			up_token =>  UpToken,
-			worker_pids => sets:new()}).
+			qetag => Qetag,
+			worker_pids => sets:new(),
+			block_done => BlockDone,
+			block_num => BlockNum}).
 
+lists_first([]) ->
+	[];
+lists_first([H|_T]) ->
+	H.
 
 worker_pool(
-		#{ file_offset := FileSize,
-			file_size := FileSize,
+		#{
+			next_block := [],
 			workers := 0}) ->
 	ok;
 worker_pool(
 		State = #{
-			file_offset := FileSize,
-			file_size := FileSize}) ->
+			next_block := []}) ->
 	receive
 		{'EXIT', Pid, normal} ->
 			worker_done(Pid, State)
@@ -201,21 +271,27 @@ worker_pool(
 			file_size := FSize}) ->
 	run_worker(FileOffset, FSize - FileOffset, State).
 
-
 run_worker(
-		Offset, Size,
-		State = #{
-			parent := Parent,
-			file := File,
-			next_block := NextBlock,
-			workers := Workers,
-			up_token :=  UpToken,
-			worker_pids := Pids}) ->
-	Pid = spawn_link(?MODULE, start_worker, [Parent, File, NextBlock, Offset, Size, UpToken]),
+	Offset, Size,
+	State = #{
+		parent := Parent,
+		file := File,
+		next_block := NextBlock,
+		workers := Workers,
+		up_token :=  UpToken,
+		block_list := BlockLeftList,
+		qetag := Qetag,
+		block_done := BlockDone,
+		block_num := BlockNum,
+		worker_pids := Pids}) ->
+	Pid = spawn_link(?MODULE, start_worker, [Parent, File, Offset, Size, UpToken, Qetag, NextBlock + 1]),
 	worker_pool(
 		State#{
-			next_block := NextBlock + 1,
-			file_offset := Offset + Size,
+			block_list := BlockLeftList -- [lists_first(BlockLeftList)],
+			next_block := lists_first(BlockLeftList),
+			block_done := BlockDone + 1,
+			block_num := BlockNum,
+			file_offset := (NextBlock * ?BLOCK_SIZE) + Size,
 			workers := Workers + 1,
 			up_token :=  UpToken,
 			worker_pids := sets:add_element(Pid, Pids)}).
@@ -246,14 +322,14 @@ ctx(BlockData, UpToken, BlockSize) ->
 	ReqHeaders = [{"content-length", ?BLOCK_SIZE}, {"authorization", AUTH}],
 	Resp = req(post, ?MKBLK_HOST ++ integer_to_list(BlockSize), ReqHeaders, BlockData, "application/octet-stream"),
 	case Resp of
-		{error, _Reason} -> "error";
+		{error, _Reason} -> [];
 		{StatusCode, _RespHeaders, RespBody} ->
 			if
 				StatusCode == 200 ->
 					[{_, Ctx}, _, _, _, _, _] = RespBody,
 					binary_to_list(Ctx);
 				true ->
-					"error"
+					[]
 			end
 	end.
 
