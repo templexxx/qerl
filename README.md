@@ -7,6 +7,8 @@ What is qerl
 
 Qerl is a Qiniu lib for Erlang
 
+七牛唯一提供块级并发上传  并行计算Qetag能力的SDK
+
 Qerl will:
 
 > 1. manage file/bucket
