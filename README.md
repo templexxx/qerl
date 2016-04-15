@@ -1,11 +1,10 @@
-Qerl
+Qerl (Qiniu Erlang SDK v1.x)
 =====
 
+[![Qiniu Logo](http://open.qiniudn.com/logo.png)](http://qiniu.com/)
 	
 What is qerl
 -----
-
-Qerl is a Qiniu lib for Erlang
 
 七牛唯一提供块级并发上传  并行计算Qetag能力的SDK
 

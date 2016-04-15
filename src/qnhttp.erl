@@ -32,7 +32,7 @@ req(Method, URL, ReqHeaders, ReqBody) ->
 req(Method, URL, ReqHeaders, ReqBody, ContentType) ->
     Resp = req_main(Method, URL, ReqHeaders, ReqBody, ContentType),
     case Resp of
-        {error, Reason} -> {error, Reason};
+        {error, Reason} -> {error, [], Reason};
         {StatusCode, RespHeaders, RespBody} ->
             retry(lists:seq(1, ?DEF_RETRY_TIME), StatusCode, RespHeaders, RespBody,
                 Method, URL, ReqHeaders, ReqBody, ContentType)
@@ -53,7 +53,7 @@ req_main(Method, URL, ReqHeaders, ReqBody, ContentType) ->
             ReqsGet = {URL, ReqHeaders},
             RespGet = httpc:request(get, ReqsGet, ?DEF_OPTION, []),
             case RespGet of
-                {error, Reason} -> {error, Reason};
+                {error, Reason} -> {error, [], Reason};
                 {ok, {{_, StatusCode, _}, RespHeaders, RespBody}} ->
                     {StatusCode, RespHeaders, RespBody}
             end;
@@ -61,7 +61,7 @@ req_main(Method, URL, ReqHeaders, ReqBody, ContentType) ->
             ReqsPost = {URL, ReqHeaders, ContentType, ReqBody},
             RespPost = httpc:request(post, ReqsPost, ?DEF_OPTION, []),
             case RespPost of
-                {error, Reason} -> {error, Reason};
+                {error, Reason} -> {error, [], Reason};
                 {ok, {{_, StatusCode, _}, RespHeaders, RespBody}} ->
                     {StatusCode, RespHeaders, RespBody}
             end
@@ -75,7 +75,7 @@ retry([_|T], StatusCode, RespHeaders, RespBody, Method, URL, ReqHeaders, ReqBody
         true ->
             Resp = req_main(Method, URL, ReqHeaders, ReqBody, ContentType),
             case Resp of
-                {error, Reason} -> {error, Reason};
+                {error, Reason} -> {error, [], Reason};
                 {StatusCode, RespHeaders, RespBody} ->
                     retry(T, StatusCode, RespHeaders, RespBody,
                         Method, URL, ReqHeaders, ReqBody, ContentType)
